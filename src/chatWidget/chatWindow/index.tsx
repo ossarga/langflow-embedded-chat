@@ -78,7 +78,7 @@ export default function ChatWindow({
   const [windowPosition, setWindowPosition] = useState({ left: "0", top: "0" });
   const inputRef = useRef<HTMLInputElement>(null); /* User input Ref */
   useEffect(() => {
-    if (triggerRef)
+    if (triggerRef?.current)
       setWindowPosition(
         getChatPosition(
           triggerRef.current!.getBoundingClientRect(),
