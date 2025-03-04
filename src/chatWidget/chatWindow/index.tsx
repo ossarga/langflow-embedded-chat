@@ -22,6 +22,7 @@ export default function ChatWindow({
   error_message_style,
   placeholder_sending,
   send_button_style,
+  show_header = true,
   online = true,
   open,
   online_message = "We'll reply as soon as we can",
@@ -49,6 +50,7 @@ export default function ChatWindow({
   chat_window_style?: React.CSSProperties;
   error_message_style?: React.CSSProperties;
   send_button_style?: React.CSSProperties;
+  show_header?: boolean;
   online?: boolean;
   open: boolean;
   online_message?: string;
@@ -201,7 +203,7 @@ export default function ChatWindow({
         ref={ref}
         className="cl-window"
       >
-        <div className="cl-header">
+        {show_header && <div className="cl-header">
           {window_title}
           <div className="cl-header-subtitle">
             {online ? (
@@ -216,7 +218,7 @@ export default function ChatWindow({
               </>
             )}
           </div>
-        </div>
+        </div>}
         <div className="cl-messages_container">
           {messages.map((message, index) => (
             <ChatMessage

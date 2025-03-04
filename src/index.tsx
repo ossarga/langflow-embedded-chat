@@ -12,6 +12,7 @@ customElements.define('langflow-chat', r2wc(ChatWidget, {
         chat_trigger_style: "json",
         host_url: "string",
         flow_id: "string",
+        show_header:"boolean",
         online: "boolean",
         online_message: "string",
         window_title: "string",
