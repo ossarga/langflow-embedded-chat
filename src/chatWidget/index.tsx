@@ -70,6 +70,7 @@ export default function ChatWidget({
 }) {
   const [open, setOpen] = useState(start_open);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  const [previousMessagesLoaded, setPreviousMessagesLoaded] = useState(false);
   const sessionId = useRef(session_id ?? uuidv4());
   function updateLastMessage(message: ChatMessageType) {
     setMessages((prev) => {
@@ -80,6 +81,54 @@ export default function ChatWidget({
   function addMessage(message: ChatMessageType) {
     setMessages((prev) => [...prev, message]);
   }
+
+  useEffect(() => {
+    if (!previousMessagesLoaded) {
+      const fetchPreviousMessages = async () => {
+        if (!host_url || !flow_id || !sessionId.current) return;
+
+        try {
+          const response = await fetch(
+              `${host_url}/api/v1/monitor/messages?flow_id=${flow_id}&session_id=${sessionId.current}`,
+              {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+              }
+          );
+
+          if (!response.ok) throw new Error("Failed to fetch previous messages");
+
+          return await response.json();
+        } catch (error) {
+          console.error("Error fetching previous messages:", error);
+          return [];
+        }
+      };
+
+      //
+      // The data object is an array of messages, with each message having 'text' and 'sender' fields. The 'text' is
+      // the message itself, and the 'sender' is the author of the message. If the sender is "Machine", then the message
+      // was authored by the AI, otherwise iti is from the user.
+      //
+      // We need to map the relevant data fields into a format that the ChatWindow component expects, which is an array
+      // of objects with 'message' and 'isSend' fields. The 'message' field is the message itself, and the 'isSend'
+      // field is a boolean that indicates who the author of the message is. If 'isSend' is true, the  message was sent
+      // by the user, otherwise it was sent by the AI.
+      //
+      fetchPreviousMessages().then((data) => {
+        if (data) {
+          const mappedMessages = data.map((msg: { text: string; sender: string; }) => ({
+            message: msg.text,
+            isSend: msg.sender !== "Machine",
+          }));
+          setMessages(mappedMessages);
+        }
+      });
+
+      setPreviousMessagesLoaded(true);
+    }
+  }, [previousMessagesLoaded, host_url, flow_id, sessionId]);
+
   useEffect(() => {
     if (!show_trigger) {
       setOpen(true);
