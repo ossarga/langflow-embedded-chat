@@ -1,3 +1,5 @@
+import r2wc from "@r2wc/react-to-web-component";
+
 export function getChatPosition(
 	triggerPosition: DOMRect,
 	Cwidth:number,
@@ -38,7 +40,7 @@ export function getChatPosition(
 		case "bottom-left":
 			return { top: distance + height+ "px", left: -Cwidth + "px"};
 		default:
-			return { top: distance + height+ "px", left: width + "px" };	
+			return { top: distance + height+ "px", left: width + "px" };
 		}
 }
 
@@ -73,4 +75,39 @@ export function extractMessageFromOutput(output:{type:string, message:any}){
 	if (type ==="message") return message.text;
 	if(type==="object") return message.text;
 	return "Unknown message structure"
+}
+
+export function getParentElementDimensions(element: Element | null): { width: number; height: number } {
+	if (element && element.parentElement) {
+		return {
+			width: element.parentElement.clientWidth,
+			height: element.parentElement.clientHeight,
+		};
+	}
+	return { width: 0, height: 0 };
+}
+
+export function observeParentElementResize(
+	element: Element | null,
+	callback: (dimensions: { width: number; height: number }) => void
+): () => void {
+	if (!element || !element.parentElement || typeof ResizeObserver === 'undefined') {
+		return () => {}; // Return empty function if element or ResizeObserver not available
+	}
+
+	const parent = element.parentElement;
+	const observer = new ResizeObserver(entries => {
+		for (const entry of entries) {
+			if (entry.target === parent) {
+				const width = parent.clientWidth;
+				const height = parent.clientHeight;
+				callback({ width, height });
+			}
+		}
+	});
+
+	observer.observe(parent);
+	return () => {
+		observer.disconnect();
+	};
 }

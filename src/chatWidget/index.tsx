@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import ChatTrigger from "./chatTrigger";
 import ChatWindow from "./chatWindow";
 import { ChatMessageType } from "../types/chatWidget";
+import { getParentElementDimensions, observeParentElementResize } from "./utils";
 const { v4: uuidv4 } = require('uuid');
 
 export default function ChatWidget({
@@ -19,6 +20,8 @@ export default function ChatWidget({
   chat_window_style,
   height,
   width,
+  height_size_mode = 'fixed',
+  width_size_mode = 'fixed',
   error_message_style,
   send_button_style,
   show_header,
@@ -53,6 +56,8 @@ export default function ChatWidget({
   offline_message?: string;
   height?: number;
   width?: number;
+  height_size_mode?: string;
+  width_size_mode?: string;
   window_title?: string;
   error_message_style?: React.CSSProperties;
   send_button_style?: React.CSSProperties;
@@ -71,6 +76,7 @@ export default function ChatWidget({
   const [open, setOpen] = useState(start_open);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [previousMessagesLoaded, setPreviousMessagesLoaded] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: width, height: height });
   const sessionId = useRef(session_id ?? uuidv4());
   function updateLastMessage(message: ChatMessageType) {
     setMessages((prev) => {
@@ -134,6 +140,34 @@ export default function ChatWidget({
       setOpen(true);
     }
   }, [show_trigger]);
+
+  useEffect(() => {
+    if (width_size_mode === 'auto' || height_size_mode === 'auto') {
+      const chatWidget = document.querySelector('langflow-chat');
+      const parentDimensions = getParentElementDimensions(chatWidget);
+      const initialDimensions = {
+        width: width_size_mode === 'auto' ? parentDimensions.width : width,
+        height: height_size_mode === 'auto' ? parentDimensions.height : height,
+      };
+
+      setWindowDimensions(initialDimensions);
+
+      return observeParentElementResize(chatWidget, (resizeDimensions) => {
+        setWindowDimensions(currentDimensions => {
+          const newDimensions = {
+            width: width_size_mode === 'auto' ? resizeDimensions.width : currentDimensions.width,
+            height: height_size_mode === 'auto' ? resizeDimensions.height : currentDimensions.height,
+          }
+          if (newDimensions.width !== currentDimensions.width || newDimensions.height !== currentDimensions.height) {
+            return newDimensions;
+          }
+          return currentDimensions;
+        });
+      });
+    } else {
+      setWindowDimensions({ width, height });
+    }
+  }, [width, height, width_size_mode, height_size_mode]);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -964,7 +998,7 @@ video {
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-} 
+}
 input::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
   color: rgb(156 163 175);
   opacity: 1; /* Firefox */
@@ -2212,8 +2246,8 @@ input::-ms-input-placeholder { /* Microsoft Edge */
         output_type={output_type}
         output_component={output_component}
         open={open}
-        height={height}
-        width={width}
+        height={windowDimensions.height}
+        width={windowDimensions.width}
         send_icon_style={send_icon_style}
         bot_message_style={bot_message_style}
         user_message_style={user_message_style}
